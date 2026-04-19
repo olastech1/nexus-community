@@ -22,11 +22,7 @@ export default function HomePage() {
       }} />
 
       {/* Nav */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: 'var(--space-4) var(--space-8)', maxWidth: '1200px', margin: '0 auto',
-        position: 'relative', zIndex: 2,
-      }}>
+      <nav className="landing-nav">
         <h1 className="text-gradient" style={{ fontSize: 'var(--text-2xl)', fontWeight: 800 }}>
           Nexus
         </h1>
@@ -37,34 +33,24 @@ export default function HomePage() {
       </nav>
 
       {/* Hero */}
-      <main style={{
-        maxWidth: '900px', margin: '0 auto', textAlign: 'center',
-        padding: 'var(--space-20) var(--space-6)', position: 'relative', zIndex: 2,
-      }}>
+      <main className="hero-section">
         <div className="animate-fadeInUp" style={{ animationFillMode: 'both' }}>
           <div className="badge badge-primary" style={{ marginBottom: 'var(--space-6)', display: 'inline-flex' }}>
             ✨ The Future of Community
           </div>
 
-          <h2 style={{
-            fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 800, lineHeight: 1.1,
-            marginBottom: 'var(--space-6)',
-          }}>
+          <h2 className="hero-title">
             Build thriving communities.
             <br />
             <span className="text-gradient">Monetize your expertise.</span>
           </h2>
 
-          <p style={{
-            fontSize: 'var(--text-lg)', color: 'var(--text-secondary)',
-            maxWidth: '600px', margin: '0 auto var(--space-10)',
-            lineHeight: 1.7,
-          }}>
+          <p className="hero-subtitle">
             Create your own community, host courses, schedule events, and earn money
             through paid memberships — all in one beautiful platform.
           </p>
 
-          <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="hero-actions">
             <Link href="/register" className="btn btn-gradient btn-lg">
               Start for Free →
             </Link>
@@ -75,10 +61,7 @@ export default function HomePage() {
         </div>
 
         {/* Feature Cards */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: 'var(--space-6)', marginTop: 'var(--space-20)', textAlign: 'left',
-        }}>
+        <div className="features-grid">
           {[
             { icon: '💬', title: 'Community Feed', desc: 'A distraction-free space for discussions, polls, and media sharing.' },
             { icon: '📚', title: 'Course Hosting', desc: 'Upload videos, organize modules, and track member progress.' },

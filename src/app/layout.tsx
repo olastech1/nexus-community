@@ -7,6 +7,19 @@ export const metadata: Metadata = {
   title: 'Nexus — Build & Grow Your Community',
   description: 'The all-in-one platform for creators to build thriving communities, host courses, and monetize their expertise.',
   keywords: ['community', 'creator', 'courses', 'membership', 'saas'],
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  },
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Nexus',
+  },
 };
 
 export default function RootLayout({

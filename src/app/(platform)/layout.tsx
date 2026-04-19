@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -27,6 +28,14 @@ const adminNav = [
   { label: 'Moderation', href: '/admin/moderation', icon: '🛡️' },
 ];
 
+// Bottom nav items for mobile (most important quick-access items)
+const mobileBottomNav = [
+  { label: 'Discover', href: '/discover', icon: '🔍' },
+  { label: 'Communities', href: '/my-communities', icon: '👥' },
+  { label: 'Leaderboard', href: '/leaderboard', icon: '🏆' },
+  { label: 'Messages', href: '/messages', icon: '💬' },
+];
+
 export default function PlatformLayout({
   children,
 }: {
@@ -34,6 +43,22 @@ export default function PlatformLayout({
 }) {
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   if (loading) {
     return (
@@ -51,12 +76,29 @@ export default function PlatformLayout({
 
   return (
     <div className="platform-layout">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <Link href="/" style={{ textDecoration: 'none' }}>
             <h2>Nexus</h2>
           </Link>
+          {/* Close button (mobile only) */}
+          <button
+            className="sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >
+            ✕
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -147,6 +189,17 @@ export default function PlatformLayout({
       <div className="main-content">
         {/* Top Bar */}
         <header className="topbar">
+          {/* Hamburger (mobile only) */}
+          <button
+            className="hamburger-btn"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+          </button>
+
           <div className="topbar-search">
             <span style={{ color: 'var(--text-tertiary)' }}>🔍</span>
             <input type="text" placeholder="Search communities, posts..." />
@@ -172,6 +225,34 @@ export default function PlatformLayout({
           {children}
         </div>
       </div>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="mobile-bottom-nav">
+        {mobileBottomNav.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`mobile-bottom-nav-item ${pathname === item.href ? 'active' : ''}`}
+          >
+            <span className="mobile-bottom-nav-icon">{item.icon}</span>
+            <span className="mobile-bottom-nav-label">{item.label}</span>
+          </Link>
+        ))}
+        {user ? (
+          <button
+            className={`mobile-bottom-nav-item`}
+            onClick={() => setSidebarOpen(true)}
+          >
+            <span className="mobile-bottom-nav-icon">☰</span>
+            <span className="mobile-bottom-nav-label">More</span>
+          </button>
+        ) : (
+          <Link href="/login" className="mobile-bottom-nav-item">
+            <span className="mobile-bottom-nav-icon">🔐</span>
+            <span className="mobile-bottom-nav-label">Sign In</span>
+          </Link>
+        )}
+      </nav>
     </div>
   );
 }
