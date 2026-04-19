@@ -10,6 +10,7 @@ const memberNav = [
   { label: 'Discover', href: '/discover', icon: '🔍' },
   { label: 'My Communities', href: '/my-communities', icon: '👥' },
   { label: 'Leaderboard', href: '/leaderboard', icon: '🏆' },
+  { label: 'Certificates', href: '/certificates', icon: '🎓' },
   { label: 'Messages', href: '/messages', icon: '💬' },
 ];
 

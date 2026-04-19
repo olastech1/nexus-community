@@ -6,6 +6,7 @@ import {
   boolean,
   numeric,
   timestamp,
+  jsonb,
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
@@ -317,8 +318,9 @@ export const courseModulesRelations = relations(courseModules, ({ one, many }) =
   lessons: many(lessons),
 }));
 
-export const lessonsRelations = relations(lessons, ({ one }) => ({
+export const lessonsRelations = relations(lessons, ({ one, many }) => ({
   module: one(courseModules, { fields: [lessons.moduleId], references: [courseModules.id] }),
+  quizzes: many(quizzes),
 }));
 
 export const eventsRelations = relations(events, ({ one }) => ({
@@ -350,5 +352,85 @@ export const resourceFilesRelations = relations(resourceFiles, ({ one }) => ({
   community: one(communities, { fields: [resourceFiles.communityId], references: [communities.id] }),
   uploader: one(profiles, { fields: [resourceFiles.uploaderId], references: [profiles.id] }),
   requiredPlan: one(communityPlans, { fields: [resourceFiles.requiredPlanId], references: [communityPlans.id] }),
+}));
+
+// ── Phase 2 Tables ──────────────────────────────────────────────
+
+// ── QUIZZES ─────────────────────────────────────────────────────
+export const quizzes = pgTable('quizzes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  lessonId: uuid('lesson_id').notNull().references(() => lessons.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  passingScore: integer('passing_score').notNull().default(70),
+  timeLimitMinutes: integer('time_limit_minutes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('idx_quizzes_lesson').on(table.lessonId),
+]);
+
+// ── QUIZ QUESTIONS ──────────────────────────────────────────────
+export const quizQuestions = pgTable('quiz_questions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  quizId: uuid('quiz_id').notNull().references(() => quizzes.id, { onDelete: 'cascade' }),
+  questionText: text('question_text').notNull(),
+  questionType: text('question_type', { enum: ['multiple_choice', 'true_false', 'text'] }).notNull().default('multiple_choice'),
+  options: jsonb('options').default([]),
+  correctAnswer: text('correct_answer').notNull(),
+  points: integer('points').notNull().default(1),
+  position: integer('position').notNull().default(0),
+}, (table) => [
+  index('idx_quiz_questions_quiz').on(table.quizId, table.position),
+]);
+
+// ── QUIZ ATTEMPTS ───────────────────────────────────────────────
+export const quizAttempts = pgTable('quiz_attempts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  quizId: uuid('quiz_id').notNull().references(() => quizzes.id, { onDelete: 'cascade' }),
+  score: integer('score').notNull().default(0),
+  maxScore: integer('max_score').notNull().default(0),
+  percentage: integer('percentage').notNull().default(0),
+  passed: boolean('passed').notNull().default(false),
+  answers: jsonb('answers').default([]),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('idx_quiz_attempts_user').on(table.userId, table.quizId),
+  index('idx_quiz_attempts_quiz').on(table.quizId),
+]);
+
+// ── CERTIFICATES ────────────────────────────────────────────────
+export const certificates = pgTable('certificates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  certificateNumber: text('certificate_number').notNull().unique(),
+  issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_certificates_unique').on(table.userId, table.courseId),
+  index('idx_certificates_user').on(table.userId),
+]);
+
+// ── Phase 2 Relations ───────────────────────────────────────────
+
+export const quizzesRelations = relations(quizzes, ({ one, many }) => ({
+  lesson: one(lessons, { fields: [quizzes.lessonId], references: [lessons.id] }),
+  questions: many(quizQuestions),
+  attempts: many(quizAttempts),
+}));
+
+export const quizQuestionsRelations = relations(quizQuestions, ({ one }) => ({
+  quiz: one(quizzes, { fields: [quizQuestions.quizId], references: [quizzes.id] }),
+}));
+
+export const quizAttemptsRelations = relations(quizAttempts, ({ one }) => ({
+  user: one(profiles, { fields: [quizAttempts.userId], references: [profiles.id] }),
+  quiz: one(quizzes, { fields: [quizAttempts.quizId], references: [quizzes.id] }),
+}));
+
+export const certificatesRelations = relations(certificates, ({ one }) => ({
+  user: one(profiles, { fields: [certificates.userId], references: [profiles.id] }),
+  course: one(courses, { fields: [certificates.courseId], references: [courses.id] }),
 }));
 

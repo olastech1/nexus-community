@@ -255,6 +255,63 @@ CREATE TABLE IF NOT EXISTS resource_files (
 
 CREATE INDEX IF NOT EXISTS idx_resource_files_community ON resource_files(community_id, category);
 
+-- ── QUIZZES ───────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS quizzes (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  lesson_id          UUID NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+  title              TEXT NOT NULL,
+  description        TEXT,
+  passing_score      INTEGER NOT NULL DEFAULT 70,
+  time_limit_minutes INTEGER,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quizzes_lesson ON quizzes(lesson_id);
+
+-- ── QUIZ QUESTIONS ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS quiz_questions (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  quiz_id       UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  question_text TEXT NOT NULL,
+  question_type TEXT NOT NULL DEFAULT 'multiple_choice' CHECK (question_type IN ('multiple_choice', 'true_false', 'text')),
+  options       JSONB DEFAULT '[]',
+  correct_answer TEXT NOT NULL,
+  points        INTEGER NOT NULL DEFAULT 1,
+  position      INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz ON quiz_questions(quiz_id, position);
+
+-- ── QUIZ ATTEMPTS ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id      UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  quiz_id      UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  score        INTEGER NOT NULL DEFAULT 0,
+  max_score    INTEGER NOT NULL DEFAULT 0,
+  percentage   INTEGER NOT NULL DEFAULT 0,
+  passed       BOOLEAN NOT NULL DEFAULT false,
+  answers      JSONB DEFAULT '[]',
+  started_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user ON quiz_attempts(user_id, quiz_id);
+CREATE INDEX IF NOT EXISTS idx_quiz_attempts_quiz ON quiz_attempts(quiz_id);
+
+-- ── CERTIFICATES ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS certificates (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id            UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  course_id          UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  certificate_number TEXT NOT NULL UNIQUE,
+  issued_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, course_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_certificates_user ON certificates(user_id);
+CREATE INDEX IF NOT EXISTS idx_certificates_course ON certificates(course_id);
+
 -- ═══════════════════════════════════════════════════════════════
 --  SEED DATA
 -- ═══════════════════════════════════════════════════════════════
@@ -266,5 +323,5 @@ INSERT INTO platform_settings (key, value) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
---  DONE — 18 tables created, all indexes in place.
+--  DONE — 22 tables created, all indexes in place.
 -- ═══════════════════════════════════════════════════════════════

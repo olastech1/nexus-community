@@ -1075,6 +1075,150 @@ textarea.input {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════
+   QUIZ PLAYER
+   ═══════════════════════════════════════════════════════════════ */
+.quiz-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.quiz-questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.quiz-question {
+  padding: var(--space-4);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.quiz-option-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+}
+
+.quiz-option-label:hover {
+  border-color: var(--brand-primary);
+  background: rgba(229, 115, 115, 0.05);
+}
+
+.quiz-option-label.selected {
+  border-color: var(--brand-primary);
+  background: rgba(229, 115, 115, 0.1);
+}
+
+.quiz-option-label input[type="radio"] {
+  accent-color: var(--brand-primary);
+  width: 16px;
+  height: 16px;
+}
+
+.quiz-score {
+  font-size: 48px;
+  font-weight: 900;
+  margin: var(--space-2) 0;
+}
+
+.quiz-score.passed {
+  color: var(--success);
+}
+
+.quiz-score.failed {
+  color: var(--error);
+}
+
+.quiz-review-item {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  border-left: 3px solid;
+}
+
+.quiz-review-item.correct {
+  background: rgba(76, 175, 80, 0.08);
+  border-left-color: var(--success);
+}
+
+.quiz-review-item.incorrect {
+  background: rgba(229, 115, 115, 0.08);
+  border-left-color: var(--error);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CERTIFICATE CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.cert-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.cert-card:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.cert-card-header {
+  background: var(--brand-gradient);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cert-card-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cert-card-icon {
+  font-size: 28px;
+}
+
+.cert-card-body {
+  padding: var(--space-5);
+}
+
+.cert-card-footer {
+  padding: 0 var(--space-5) var(--space-5);
+}
+
 /* ── Hamburger Button ──────────────────────────────────────── */
 .hamburger-btn {
   display: none;
