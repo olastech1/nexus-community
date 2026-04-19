@@ -11,6 +11,7 @@ const memberNav = [
   { label: 'My Communities', href: '/my-communities', icon: '👥' },
   { label: 'Leaderboard', href: '/leaderboard', icon: '🏆' },
   { label: 'Certificates', href: '/certificates', icon: '🎓' },
+  { label: 'Profile', href: '/profile', icon: '👤' },
   { label: 'Messages', href: '/messages', icon: '💬' },
 ];
 
