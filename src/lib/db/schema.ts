@@ -434,3 +434,82 @@ export const certificatesRelations = relations(certificates, ({ one }) => ({
   course: one(courses, { fields: [certificates.courseId], references: [courses.id] }),
 }));
 
+// ── Phase 3 Tables — Affiliates ─────────────────────────────────
+
+export const affiliateLinks = pgTable('affiliate_links', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  communityId: uuid('community_id').notNull().references(() => communities.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(),
+  commissionPercent: numeric('commission_percent', { precision: 5, scale: 2 }).notNull().default('10'),
+  totalReferrals: integer('total_referrals').notNull().default(0),
+  totalEarnings: numeric('total_earnings', { precision: 10, scale: 2 }).notNull().default('0'),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_affiliate_links_unique').on(table.communityId, table.code),
+  index('idx_affiliate_links_user').on(table.userId),
+]);
+
+export const affiliateReferrals = pgTable('affiliate_referrals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  affiliateLinkId: uuid('affiliate_link_id').notNull().references(() => affiliateLinks.id, { onDelete: 'cascade' }),
+  referredUserId: uuid('referred_user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  membershipId: uuid('membership_id').references(() => memberships.id, { onDelete: 'set null' }),
+  commissionAmount: numeric('commission_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+  status: text('status', { enum: ['pending', 'approved', 'paid', 'rejected'] }).notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('idx_affiliate_referrals_link').on(table.affiliateLinkId),
+]);
+
+// ── Phase 4 Tables — Webhooks ───────────────────────────────────
+
+export const webhooks = pgTable('webhooks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  communityId: uuid('community_id').notNull().references(() => communities.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  events: text('events').array().notNull().default([]),
+  secret: text('secret').notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('idx_webhooks_community').on(table.communityId),
+]);
+
+export const webhookLogs = pgTable('webhook_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  webhookId: uuid('webhook_id').notNull().references(() => webhooks.id, { onDelete: 'cascade' }),
+  event: text('event').notNull(),
+  payload: jsonb('payload').notNull().default({}),
+  statusCode: integer('status_code'),
+  responseTimeMs: integer('response_time_ms'),
+  success: boolean('success').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('idx_webhook_logs_webhook').on(table.webhookId),
+]);
+
+// ── Phase 3+4 Relations ─────────────────────────────────────────
+
+export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
+  user: one(profiles, { fields: [affiliateLinks.userId], references: [profiles.id] }),
+  community: one(communities, { fields: [affiliateLinks.communityId], references: [communities.id] }),
+  referrals: many(affiliateReferrals),
+}));
+
+export const affiliateReferralsRelations = relations(affiliateReferrals, ({ one }) => ({
+  affiliateLink: one(affiliateLinks, { fields: [affiliateReferrals.affiliateLinkId], references: [affiliateLinks.id] }),
+  referredUser: one(profiles, { fields: [affiliateReferrals.referredUserId], references: [profiles.id] }),
+  membership: one(memberships, { fields: [affiliateReferrals.membershipId], references: [memberships.id] }),
+}));
+
+export const webhooksRelations = relations(webhooks, ({ one, many }) => ({
+  community: one(communities, { fields: [webhooks.communityId], references: [communities.id] }),
+  logs: many(webhookLogs),
+}));
+
+export const webhookLogsRelations = relations(webhookLogs, ({ one }) => ({
+  webhook: one(webhooks, { fields: [webhookLogs.webhookId], references: [webhooks.id] }),
+}));
+

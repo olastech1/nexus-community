@@ -312,6 +312,63 @@ CREATE TABLE IF NOT EXISTS certificates (
 CREATE INDEX IF NOT EXISTS idx_certificates_user ON certificates(user_id);
 CREATE INDEX IF NOT EXISTS idx_certificates_course ON certificates(course_id);
 
+-- ── AFFILIATE LINKS ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS affiliate_links (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id            UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  community_id       UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  code               TEXT NOT NULL,
+  commission_percent NUMERIC(5,2) NOT NULL DEFAULT 10,
+  total_referrals    INTEGER NOT NULL DEFAULT 0,
+  total_earnings     NUMERIC(10,2) NOT NULL DEFAULT 0,
+  active             BOOLEAN NOT NULL DEFAULT true,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(community_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_affiliate_links_user ON affiliate_links(user_id);
+CREATE INDEX IF NOT EXISTS idx_affiliate_links_community ON affiliate_links(community_id);
+
+-- ── AFFILIATE REFERRALS ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS affiliate_referrals (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  affiliate_link_id  UUID NOT NULL REFERENCES affiliate_links(id) ON DELETE CASCADE,
+  referred_user_id   UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  membership_id      UUID REFERENCES memberships(id) ON DELETE SET NULL,
+  commission_amount  NUMERIC(10,2) NOT NULL DEFAULT 0,
+  status             TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'paid', 'rejected')),
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_affiliate_referrals_link ON affiliate_referrals(affiliate_link_id);
+
+-- ── WEBHOOKS ──────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS webhooks (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  community_id UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  url          TEXT NOT NULL,
+  events       TEXT[] NOT NULL DEFAULT '{}',
+  secret       TEXT NOT NULL,
+  active       BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhooks_community ON webhooks(community_id);
+
+-- ── WEBHOOK LOGS ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS webhook_logs (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  webhook_id       UUID NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+  event            TEXT NOT NULL,
+  payload          JSONB NOT NULL DEFAULT '{}',
+  status_code      INTEGER,
+  response_time_ms INTEGER,
+  success          BOOLEAN NOT NULL DEFAULT false,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_webhook ON webhook_logs(webhook_id, created_at DESC);
+
 -- ═══════════════════════════════════════════════════════════════
 --  SEED DATA
 -- ═══════════════════════════════════════════════════════════════
@@ -323,5 +380,5 @@ INSERT INTO platform_settings (key, value) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
---  DONE — 22 tables created, all indexes in place.
+--  DONE — 26 tables created, all indexes in place.
 -- ═══════════════════════════════════════════════════════════════
