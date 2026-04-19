@@ -791,6 +791,290 @@ textarea.input {
   text-align: left;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   POLL CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.poll-card {
+  margin-top: var(--space-2);
+}
+
+.poll-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.poll-option {
+  position: relative;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.poll-option:hover:not(.voted) {
+  border-color: var(--brand-primary);
+  background: var(--bg-hover);
+}
+
+.poll-option.voted {
+  cursor: pointer;
+}
+
+.poll-option.selected {
+  border-color: var(--brand-primary);
+  background: rgba(229, 115, 115, 0.08);
+}
+
+.poll-option.winning {
+  border-color: var(--success);
+}
+
+.poll-option-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.poll-option-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.poll-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.poll-option-percent {
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.poll-option-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.poll-option-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.poll-option.winning .poll-option-fill {
+  background: var(--success);
+}
+
+.poll-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.poll-voted-label {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+/* Poll creator input */
+.poll-creator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-default);
+}
+
+.poll-creator-option {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.poll-creator-option input {
+  flex: 1;
+}
+
+.poll-creator-remove {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.poll-creator-remove:hover {
+  color: var(--error);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DISCOUNT CODES TABLE
+   ═══════════════════════════════════════════════════════════════ */
+.promo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.promo-table th,
+.promo-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--text-sm);
+}
+
+.promo-table th {
+  color: var(--text-tertiary);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.promo-code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: monospace;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.promo-code-badge:hover {
+  border-color: var(--brand-primary);
+  background: rgba(229, 115, 115, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESOURCE VAULT
+   ═══════════════════════════════════════════════════════════════ */
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.resource-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.resource-card:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.resource-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--bg-tertiary);
+}
+
+.resource-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.resource-locked {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.resource-locked::after {
+  content: '🔒';
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  font-size: 18px;
+}
+
+.resource-category-tabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.resource-category-tab {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.resource-category-tab:hover,
+.resource-category-tab.active {
+  background: var(--brand-primary);
+  color: white;
+  border-color: var(--brand-primary);
+}
+
+
 /* ── Hamburger Button ──────────────────────────────────────── */
 .hamburger-btn {
   display: none;

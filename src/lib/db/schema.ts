@@ -197,6 +197,64 @@ export const platformSettings = pgTable('platform_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ── POLL OPTIONS ────────────────────────────────────────────────
+export const pollOptions = pgTable('poll_options', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  postId: uuid('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  position: integer('position').notNull().default(0),
+}, (table) => [
+  index('idx_poll_options_post').on(table.postId, table.position),
+]);
+
+// ── POLL VOTES ──────────────────────────────────────────────────
+export const pollVotes = pgTable('poll_votes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  postId: uuid('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  pollOptionId: uuid('poll_option_id').notNull().references(() => pollOptions.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_poll_votes_unique').on(table.userId, table.postId),
+  index('idx_poll_votes_option').on(table.pollOptionId),
+]);
+
+// ── DISCOUNT CODES ──────────────────────────────────────────────
+export const discountCodes = pgTable('discount_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  communityId: uuid('community_id').notNull().references(() => communities.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(),
+  type: text('type', { enum: ['percent', 'fixed'] }).notNull().default('percent'),
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull().default('0'),
+  maxUses: integer('max_uses'),
+  currentUses: integer('current_uses').notNull().default(0),
+  validFrom: timestamp('valid_from', { withTimezone: true }).notNull().defaultNow(),
+  validUntil: timestamp('valid_until', { withTimezone: true }),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_discount_codes_unique').on(table.communityId, table.code),
+  index('idx_discount_codes_community').on(table.communityId),
+]);
+
+// ── RESOURCE FILES ──────────────────────────────────────────────
+export const resourceFiles = pgTable('resource_files', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  communityId: uuid('community_id').notNull().references(() => communities.id, { onDelete: 'cascade' }),
+  uploaderId: uuid('uploader_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  fileUrl: text('file_url').notNull(),
+  fileType: text('file_type', { enum: ['pdf', 'image', 'video', 'code', 'archive', 'other'] }).notNull().default('other'),
+  fileSize: integer('file_size').notNull().default(0),
+  category: text('category').notNull().default('General'),
+  requiredPlanId: uuid('required_plan_id').references(() => communityPlans.id, { onDelete: 'set null' }),
+  downloadCount: integer('download_count').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('idx_resource_files_community').on(table.communityId, table.category),
+]);
+
 // ═══════════════════════════════════════════════════════════════
 //  RELATIONS (for Drizzle query API)
 // ═══════════════════════════════════════════════════════════════
@@ -208,6 +266,7 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   comments: many(comments),
   likes: many(likes),
   notifications: many(notifications),
+  pollVotes: many(pollVotes),
 }));
 
 export const communitiesRelations = relations(communities, ({ one, many }) => ({
@@ -217,6 +276,8 @@ export const communitiesRelations = relations(communities, ({ one, many }) => ({
   posts: many(posts),
   courses: many(courses),
   events: many(events),
+  discountCodes: many(discountCodes),
+  resourceFiles: many(resourceFiles),
 }));
 
 export const communityPlansRelations = relations(communityPlans, ({ one }) => ({
@@ -233,6 +294,8 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   author: one(profiles, { fields: [posts.authorId], references: [profiles.id] }),
   community: one(communities, { fields: [posts.communityId], references: [communities.id] }),
   comments: many(comments),
+  pollOptions: many(pollOptions),
+  pollVotes: many(pollVotes),
 }));
 
 export const commentsRelations = relations(comments, ({ one }) => ({
@@ -265,3 +328,27 @@ export const eventsRelations = relations(events, ({ one }) => ({
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(profiles, { fields: [notifications.userId], references: [profiles.id] }),
 }));
+
+// ── Phase 1 Relations ───────────────────────────────────────────
+
+export const pollOptionsRelations = relations(pollOptions, ({ one, many }) => ({
+  post: one(posts, { fields: [pollOptions.postId], references: [posts.id] }),
+  votes: many(pollVotes),
+}));
+
+export const pollVotesRelations = relations(pollVotes, ({ one }) => ({
+  user: one(profiles, { fields: [pollVotes.userId], references: [profiles.id] }),
+  post: one(posts, { fields: [pollVotes.postId], references: [posts.id] }),
+  option: one(pollOptions, { fields: [pollVotes.pollOptionId], references: [pollOptions.id] }),
+}));
+
+export const discountCodesRelations = relations(discountCodes, ({ one }) => ({
+  community: one(communities, { fields: [discountCodes.communityId], references: [communities.id] }),
+}));
+
+export const resourceFilesRelations = relations(resourceFiles, ({ one }) => ({
+  community: one(communities, { fields: [resourceFiles.communityId], references: [communities.id] }),
+  uploader: one(profiles, { fields: [resourceFiles.uploaderId], references: [profiles.id] }),
+  requiredPlan: one(communityPlans, { fields: [resourceFiles.requiredPlanId], references: [communityPlans.id] }),
+}));
+

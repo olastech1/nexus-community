@@ -195,6 +195,66 @@ CREATE TABLE IF NOT EXISTS platform_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── POLL OPTIONS ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS poll_options (
+  id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id  UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  text     TEXT NOT NULL,
+  position INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_poll_options_post ON poll_options(post_id, position);
+
+-- ── POLL VOTES ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS poll_votes (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  post_id        UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  poll_option_id UUID NOT NULL REFERENCES poll_options(id) ON DELETE CASCADE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, post_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_poll_votes_option ON poll_votes(poll_option_id);
+CREATE INDEX IF NOT EXISTS idx_poll_votes_post ON poll_votes(post_id);
+
+-- ── DISCOUNT CODES ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS discount_codes (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  community_id  UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  code          TEXT NOT NULL,
+  type          TEXT NOT NULL DEFAULT 'percent' CHECK (type IN ('percent', 'fixed')),
+  amount        NUMERIC(10,2) NOT NULL DEFAULT 0,
+  max_uses      INTEGER,
+  current_uses  INTEGER NOT NULL DEFAULT 0,
+  valid_from    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  valid_until   TIMESTAMPTZ,
+  active        BOOLEAN NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(community_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_discount_codes_community ON discount_codes(community_id);
+CREATE INDEX IF NOT EXISTS idx_discount_codes_lookup ON discount_codes(community_id, code) WHERE active = true;
+
+-- ── RESOURCE FILES ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS resource_files (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  community_id     UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  uploader_id      UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title            TEXT NOT NULL,
+  description      TEXT,
+  file_url         TEXT NOT NULL,
+  file_type        TEXT NOT NULL DEFAULT 'other' CHECK (file_type IN ('pdf', 'image', 'video', 'code', 'archive', 'other')),
+  file_size        INTEGER NOT NULL DEFAULT 0,
+  category         TEXT NOT NULL DEFAULT 'General',
+  required_plan_id UUID REFERENCES community_plans(id) ON DELETE SET NULL,
+  download_count   INTEGER NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_resource_files_community ON resource_files(community_id, category);
+
 -- ═══════════════════════════════════════════════════════════════
 --  SEED DATA
 -- ═══════════════════════════════════════════════════════════════
@@ -206,5 +266,5 @@ INSERT INTO platform_settings (key, value) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
---  DONE — 14 tables created, all indexes in place.
+--  DONE — 18 tables created, all indexes in place.
 -- ═══════════════════════════════════════════════════════════════

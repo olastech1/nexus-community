@@ -16,6 +16,7 @@ const memberNav = [
 const creatorNav = [
   { label: 'Dashboard', href: '/dashboard', icon: '📊' },
   { label: 'Courses', href: '/dashboard/courses', icon: '📚' },
+  { label: 'Promo Codes', href: '/dashboard/promo-codes', icon: '🏷️' },
   { label: 'Events', href: '/dashboard/events', icon: '📅' },
   { label: 'Payments', href: '/dashboard/payments', icon: '💰' },
 ];

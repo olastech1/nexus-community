@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import CommentThread from '@/components/feed/CommentThread';
+import PollCard from '@/components/feed/PollCard';
 
 interface PostData {
   id: string;
@@ -27,6 +28,21 @@ interface PlanData {
   isDefault: boolean;
 }
 
+interface ResourceData {
+  id: string;
+  title: string;
+  description: string | null;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  category: string;
+  downloadCount: number;
+  hasAccess: boolean;
+  formattedSize: string;
+  uploaderName: string;
+  createdAt: string;
+}
+
 interface CommunityData {
   id: string;
   creatorId: string;
@@ -43,7 +59,7 @@ interface CommunityData {
   posts: PostData[];
 }
 
-type Tab = 'feed' | 'courses' | 'events' | 'members' | 'about';
+type Tab = 'feed' | 'courses' | 'resources' | 'events' | 'members' | 'about';
 
 export default function CommunityPage() {
   const params = useParams();
@@ -57,6 +73,16 @@ export default function CommunityPage() {
   const [newPostContent, setNewPostContent] = useState('');
   const [posting, setPosting] = useState(false);
 
+  // Poll creation state
+  const [postMode, setPostMode] = useState<'text' | 'poll'>('text');
+  const [pollChoices, setPollChoices] = useState<string[]>(['', '']);
+
+  // Resources state
+  const [resources, setResources] = useState<ResourceData[]>([]);
+  const [resourceCategories, setResourceCategories] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [loadingResources, setLoadingResources] = useState(false);
+
   const fetchCommunity = useCallback(async () => {
     try {
       const res = await fetch(`/api/communities/${slug}`);
@@ -68,6 +94,27 @@ export default function CommunityPage() {
   }, [slug]);
 
   useEffect(() => { fetchCommunity(); }, [fetchCommunity]);
+
+  // Fetch resources when tab changes
+  const fetchResources = useCallback(async () => {
+    if (!community) return;
+    setLoadingResources(true);
+    try {
+      const res = await fetch(`/api/resources?communityId=${community.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setResources(data.items || []);
+        setResourceCategories(data.categories || []);
+      }
+    } catch { /* ignore */ }
+    setLoadingResources(false);
+  }, [community]);
+
+  useEffect(() => {
+    if (activeTab === 'resources' && community) {
+      fetchResources();
+    }
+  }, [activeTab, community, fetchResources]);
 
   const handleJoin = async () => {
     if (!community) return;
@@ -91,19 +138,40 @@ export default function CommunityPage() {
 
   const handlePost = async () => {
     if (!community || !newPostContent.trim()) return;
+
+    // Validate poll
+    if (postMode === 'poll') {
+      const validChoices = pollChoices.filter(c => c.trim());
+      if (validChoices.length < 2) {
+        addToast('error', 'Add at least 2 poll options');
+        return;
+      }
+    }
+
     setPosting(true);
+
+    const body: any = {
+      communityId: community.id,
+      content: newPostContent.trim(),
+      postType: postMode,
+    };
+    if (postMode === 'poll') {
+      body.pollChoices = pollChoices.filter(c => c.trim());
+    }
 
     const res = await fetch('/api/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ communityId: community.id, content: newPostContent.trim() }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
       addToast('error', 'Post failed');
     } else {
       setNewPostContent('');
-      addToast('success', 'Post published!');
+      setPostMode('text');
+      setPollChoices(['', '']);
+      addToast('success', postMode === 'poll' ? 'Poll published!' : 'Post published!');
       fetchCommunity();
     }
     setPosting(false);
@@ -118,6 +186,16 @@ export default function CommunityPage() {
     fetchCommunity();
   };
 
+  const handleDownload = async (resource: ResourceData) => {
+    // Track the download
+    await fetch('/api/resources', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: resource.id }),
+    });
+    window.open(resource.fileUrl, '_blank');
+  };
+
   const getInitials = (name: string) => name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 
   const timeAgo = (dateStr: string) => {
@@ -128,6 +206,17 @@ export default function CommunityPage() {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const fileTypeIcon = (type: string) => {
+    switch (type) {
+      case 'pdf': return '📄';
+      case 'image': return '🖼️';
+      case 'video': return '🎬';
+      case 'code': return '💻';
+      case 'archive': return '📦';
+      default: return '📁';
+    }
   };
 
   if (loading) {
@@ -152,10 +241,15 @@ export default function CommunityPage() {
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'feed', label: 'Feed', icon: '💬' },
     { id: 'courses', label: 'Courses', icon: '📚' },
+    { id: 'resources', label: 'Resources', icon: '📁' },
     { id: 'events', label: 'Events', icon: '📅' },
     { id: 'members', label: 'Members', icon: '👥' },
     { id: 'about', label: 'About', icon: 'ℹ️' },
   ];
+
+  const filteredResources = activeCategory === 'All'
+    ? resources
+    : resources.filter(r => r.category === activeCategory);
 
   return (
     <div className="animate-fadeIn">
@@ -216,12 +310,72 @@ export default function CommunityPage() {
               <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                 <div className="avatar avatar-md">{getInitials(user?.displayName || 'U')}</div>
                 <div style={{ flex: 1 }}>
-                  <textarea className="input" placeholder="Share something with the community..." value={newPostContent}
+                  {/* Post type toggle */}
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                    <button
+                      className={`btn btn-sm ${postMode === 'text' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setPostMode('text')}
+                      style={{ fontSize: 'var(--text-xs)' }}
+                    >
+                      ✏️ Text
+                    </button>
+                    <button
+                      className={`btn btn-sm ${postMode === 'poll' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setPostMode('poll')}
+                      style={{ fontSize: 'var(--text-xs)' }}
+                    >
+                      📊 Poll
+                    </button>
+                  </div>
+
+                  <textarea className="input" placeholder={postMode === 'poll' ? "What's your question?" : "Share something with the community..."} value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
                     style={{ width: '100%', minHeight: '80px', resize: 'vertical' }} />
+
+                  {/* Poll options builder */}
+                  {postMode === 'poll' && (
+                    <div className="poll-creator">
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 'var(--space-1)' }}>
+                        Poll Options
+                      </div>
+                      {pollChoices.map((choice, idx) => (
+                        <div key={idx} className="poll-creator-option">
+                          <input
+                            className="input"
+                            placeholder={`Option ${idx + 1}`}
+                            value={choice}
+                            onChange={(e) => {
+                              const updated = [...pollChoices];
+                              updated[idx] = e.target.value;
+                              setPollChoices(updated);
+                            }}
+                            style={{ padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)' }}
+                          />
+                          {pollChoices.length > 2 && (
+                            <button
+                              className="poll-creator-remove"
+                              onClick={() => setPollChoices(pollChoices.filter((_, i) => i !== idx))}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {pollChoices.length < 10 && (
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setPollChoices([...pollChoices, ''])}
+                          style={{ fontSize: 'var(--text-xs)', alignSelf: 'flex-start' }}
+                        >
+                          + Add Option
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>
                     <button className="btn btn-primary" onClick={handlePost} disabled={posting || !newPostContent.trim()}>
-                      {posting ? <span className="spinner spinner-sm" /> : 'Post'}
+                      {posting ? <span className="spinner spinner-sm" /> : postMode === 'poll' ? '📊 Publish Poll' : 'Post'}
                     </button>
                   </div>
                 </div>
@@ -250,11 +404,17 @@ export default function CommunityPage() {
                         {post.author?.displayName}
                         {post.author?.handle && <span style={{ color: 'var(--text-tertiary)', fontWeight: 400, marginLeft: 'var(--space-2)' }}>@{post.author.handle}</span>}
                       </div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{timeAgo(post.createdAt)}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
+                        {post.postType === 'poll' && <span style={{ color: 'var(--brand-primary)', marginRight: 'var(--space-2)' }}>📊 Poll</span>}
+                        {timeAgo(post.createdAt)}
+                      </div>
                     </div>
                   </div>
 
                   <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginBottom: 'var(--space-4)' }}>{post.content}</div>
+
+                  {/* Poll rendering */}
+                  {post.postType === 'poll' && <PollCard postId={post.id} />}
 
                   <div style={{ display: 'flex', gap: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-default)' }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => handleLike(post.id)}
@@ -266,6 +426,97 @@ export default function CommunityPage() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Resources Tab */}
+      {activeTab === 'resources' && (
+        <div className="animate-fadeIn">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+            <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700 }}>📁 Resource Vault</h2>
+          </div>
+
+          {loadingResources ? (
+            <div className="resource-grid">
+              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '180px', borderRadius: 'var(--radius-lg)' }} />)}
+            </div>
+          ) : resources.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-12)', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '48px', marginBottom: 'var(--space-4)' }}>📂</div>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 600 }}>No resources yet</h3>
+              <p>Resources uploaded by the creator will appear here.</p>
+            </div>
+          ) : (
+            <>
+              {/* Category filter tabs */}
+              <div className="resource-category-tabs">
+                <button
+                  className={`resource-category-tab ${activeCategory === 'All' ? 'active' : ''}`}
+                  onClick={() => setActiveCategory('All')}
+                >
+                  All ({resources.length})
+                </button>
+                {resourceCategories.map(cat => (
+                  <button
+                    key={cat}
+                    className={`resource-category-tab ${activeCategory === cat ? 'active' : ''}`}
+                    onClick={() => setActiveCategory(cat)}
+                  >
+                    {cat} ({resources.filter(r => r.category === cat).length})
+                  </button>
+                ))}
+              </div>
+
+              {/* Resource grid */}
+              <div className="resource-grid">
+                {filteredResources.map(resource => (
+                  <div
+                    key={resource.id}
+                    className={`resource-card ${!resource.hasAccess ? 'resource-locked' : ''}`}
+                    style={{ position: 'relative' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+                      <div className="resource-icon">
+                        {fileTypeIcon(resource.fileType)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontWeight: 700, fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>
+                          {resource.title}
+                        </h4>
+                        {resource.description && (
+                          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            {resource.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="resource-meta">
+                      <span>{resource.formattedSize}</span>
+                      <span>•</span>
+                      <span>{resource.fileType.toUpperCase()}</span>
+                      <span>•</span>
+                      <span>⬇ {resource.downloadCount}</span>
+                    </div>
+
+                    {resource.hasAccess ? (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleDownload(resource)}
+                        style={{ width: '100%' }}
+                      >
+                        ⬇ Download
+                      </button>
+                    ) : (
+                      <button className="btn btn-ghost btn-sm" disabled style={{ width: '100%' }}>
+                        🔒 Upgrade to Access
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
