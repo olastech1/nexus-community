@@ -7,16 +7,15 @@ import Link from 'next/link';
 const memberNav = [
   { label: 'Discover', href: '/discover', icon: '🔍' },
   { label: 'My Communities', href: '/my-communities', icon: '👥' },
+  { label: 'Leaderboard', href: '/leaderboard', icon: '🏆' },
   { label: 'Messages', href: '/messages', icon: '💬' },
 ];
 
 const creatorNav = [
   { label: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { label: 'My Community', href: '/dashboard/community', icon: '🏠' },
   { label: 'Courses', href: '/dashboard/courses', icon: '📚' },
   { label: 'Events', href: '/dashboard/events', icon: '📅' },
   { label: 'Payments', href: '/dashboard/payments', icon: '💰' },
-  { label: 'Members', href: '/dashboard/members', icon: '👤' },
 ];
 
 const adminNav = [
