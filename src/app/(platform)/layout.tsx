@@ -117,15 +117,15 @@ export default function PlatformLayout({
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <div className="avatar avatar-sm">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.display_name} />
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.displayName} />
                 ) : (
-                  getInitials(user.display_name)
+                  getInitials(user.displayName)
                 )}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="truncate" style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>
-                  {user.display_name}
+                  {user.displayName}
                 </div>
                 <div className="truncate" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                   {user.role}
@@ -158,10 +158,10 @@ export default function PlatformLayout({
             {user && (
               <Link href={user.handle ? `/profile/${user.handle}` : `/profile/${user.id}`}>
                 <div className="avatar avatar-sm" style={{ cursor: 'pointer' }}>
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt={user.display_name} />
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.displayName} />
                   ) : (
-                    getInitials(user.display_name)
+                    getInitials(user.displayName)
                   )}
                 </div>
               </Link>

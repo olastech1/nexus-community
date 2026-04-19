@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
-import type { UserRole } from '@/types';
 
 export default function RegisterPage() {
-  const [role, setRole] = useState<UserRole>('member');
+  const [role, setRole] = useState<'member' | 'creator'>('member');
   const [displayName, setDisplayName] = useState('');
   const [handle, setHandle] = useState('');
   const [email, setEmail] = useState('');
@@ -47,7 +46,7 @@ export default function RegisterPage() {
       return;
     }
 
-    addToast('success', 'Account created!', 'Please check your email to verify your account.');
+    addToast('success', 'Account created!');
     router.push('/discover');
   };
 
@@ -58,7 +57,6 @@ export default function RegisterPage() {
         <p>Create your account</p>
       </div>
 
-      {/* Role Selector */}
       <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
         <button
           type="button"
@@ -81,87 +79,49 @@ export default function RegisterPage() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="input-group">
           <label htmlFor="register-name">Display Name</label>
-          <input
-            id="register-name"
-            type="text"
-            className={`input ${errors.displayName ? 'input-error' : ''}`}
-            placeholder="Your name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
+          <input id="register-name" type="text" className={`input ${errors.displayName ? 'input-error' : ''}`}
+            placeholder="Your name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           {errors.displayName && <span className="error-text">{errors.displayName}</span>}
         </div>
 
         {role === 'creator' && (
           <div className="input-group">
             <label htmlFor="register-handle">Handle</label>
-            <input
-              id="register-handle"
-              type="text"
-              className={`input ${errors.handle ? 'input-error' : ''}`}
-              placeholder="@yourhandle"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase())}
-            />
+            <input id="register-handle" type="text" className={`input ${errors.handle ? 'input-error' : ''}`}
+              placeholder="@yourhandle" value={handle}
+              onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase())} />
             {errors.handle && <span className="error-text">{errors.handle}</span>}
           </div>
         )}
 
         <div className="input-group">
           <label htmlFor="register-email">Email</label>
-          <input
-            id="register-email"
-            type="email"
-            className={`input ${errors.email ? 'input-error' : ''}`}
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
+          <input id="register-email" type="email" className={`input ${errors.email ? 'input-error' : ''}`}
+            placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           {errors.email && <span className="error-text">{errors.email}</span>}
         </div>
 
         <div className="input-group">
           <label htmlFor="register-password">Password</label>
-          <input
-            id="register-password"
-            type="password"
-            className={`input ${errors.password ? 'input-error' : ''}`}
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-          />
+          <input id="register-password" type="password" className={`input ${errors.password ? 'input-error' : ''}`}
+            placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
           {errors.password && <span className="error-text">{errors.password}</span>}
         </div>
 
         <div className="input-group">
           <label htmlFor="register-confirm">Confirm Password</label>
-          <input
-            id="register-confirm"
-            type="password"
-            className={`input ${errors.confirmPassword ? 'input-error' : ''}`}
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-          />
+          <input id="register-confirm" type="password" className={`input ${errors.confirmPassword ? 'input-error' : ''}`}
+            placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
           {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
         </div>
 
-        <button
-          type="submit"
-          className="btn btn-gradient btn-lg"
-          disabled={loading}
-          style={{ width: '100%' }}
-        >
+        <button type="submit" className="btn btn-gradient btn-lg" disabled={loading} style={{ width: '100%' }}>
           {loading ? <span className="spinner spinner-sm" /> : `Create ${role === 'creator' ? 'Creator' : 'Member'} Account`}
         </button>
       </form>
 
       <div className="auth-footer">
-        Already have an account?{' '}
-        <Link href="/login">Sign in</Link>
+        Already have an account? <Link href="/login">Sign in</Link>
       </div>
     </div>
   );

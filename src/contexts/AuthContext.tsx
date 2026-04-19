@@ -1,9 +1,16 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { SessionUser, UserRole } from '@/types';
-import type { User } from '@supabase/supabase-js';
+import type { UserRole } from '@/types';
+
+interface SessionUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  displayName: string;
+  handle: string | null;
+  avatarUrl: string | null;
+}
 
 interface AuthContextType {
   user: SessionUser | null;
@@ -19,76 +26,38 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
-  const fetchProfile = useCallback(async (authUser: User): Promise<SessionUser | null> => {
+  const fetchSession = useCallback(async () => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, role, display_name, handle, avatar_url, status')
-        .eq('id', authUser.id)
-        .single();
+      const res = await fetch('/api/auth/session');
+      const session = await res.json();
 
-      if (!profile || profile.status === 'suspended') return null;
-
-      return {
-        id: profile.id,
-        email: authUser.email || '',
-        role: profile.role as UserRole,
-        display_name: profile.display_name,
-        handle: profile.handle,
-        avatar_url: profile.avatar_url,
-      };
+      if (session?.user?.id) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          role: session.user.role || 'member',
+          displayName: session.user.displayName || session.user.name || 'User',
+          handle: session.user.handle || null,
+          avatarUrl: session.user.avatarUrl || session.user.image || null,
+        });
+      } else {
+        setUser(null);
+      }
     } catch {
-      // Fallback to user metadata
-      const meta = authUser.user_metadata || {};
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        role: (meta.role as UserRole) || 'member',
-        display_name: meta.display_name || authUser.email?.split('@')[0] || 'User',
-        handle: null,
-        avatar_url: null,
-      };
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-  }, [supabase]);
-
-  const refreshProfile = useCallback(async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      const profile = await fetchProfile(authUser);
-      setUser(profile);
-    }
-  }, [supabase, fetchProfile]);
+  }, []);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          const profile = await fetchProfile(authUser);
-          setUser(profile);
-        }
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchSession();
+  }, [fetchSession]);
 
-    getInitialSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await fetchProfile(session.user);
-        setUser(profile);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, fetchProfile]);
+  const refreshProfile = useCallback(async () => {
+    await fetchSession();
+  }, [fetchSession]);
 
   const signUp = async (
     email: string,
@@ -97,36 +66,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     displayName: string,
     handle?: string
   ): Promise<{ error?: string }> => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: displayName, role, handle: handle || null },
-      },
-    });
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName, role, handle }),
+      });
 
-    if (error) return { error: error.message };
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || 'Registration failed' };
 
-    // Update profile with handle if creator
-    if (role === 'creator' && handle) {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        await supabase.from('profiles').update({ handle, role: 'creator' }).eq('id', authUser.id);
-      }
+      // Auto sign in after registration
+      const signInResult = await signIn(email, password);
+      return signInResult;
+    } catch {
+      return { error: 'Network error' };
     }
-
-    return {};
   };
 
   const signIn = async (email: string, password: string): Promise<{ error?: string }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    return {};
+    try {
+      const { signIn: nextAuthSignIn } = await import('next-auth/react');
+      const result = await nextAuthSignIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        return { error: 'Invalid email or password' };
+      }
+
+      // Refresh session after sign in
+      await fetchSession();
+      return {};
+    } catch {
+      return { error: 'Network error' };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      const { signOut: nextAuthSignOut } = await import('next-auth/react');
+      await nextAuthSignOut({ redirect: false });
+      setUser(null);
+    } catch {
+      setUser(null);
+    }
   };
 
   return (
