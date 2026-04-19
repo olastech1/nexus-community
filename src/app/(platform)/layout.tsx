@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const memberNav = [
   { label: 'Discover', href: '/discover', icon: '🔍' },
@@ -151,9 +152,7 @@ export default function PlatformLayout({
             <input type="text" placeholder="Search communities, posts..." />
           </div>
           <div className="topbar-actions">
-            <button className="btn btn-icon btn-ghost" title="Notifications" style={{ fontSize: '18px', position: 'relative' }}>
-              🔔
-            </button>
+            <NotificationBell />
             {user && (
               <Link href={user.handle ? `/profile/${user.handle}` : `/profile/${user.id}`}>
                 <div className="avatar avatar-sm" style={{ cursor: 'pointer' }}>
