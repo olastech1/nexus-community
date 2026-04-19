@@ -12,12 +12,12 @@ export default function HomePage() {
       {/* Background Effects */}
       <div style={{
         position: 'absolute', width: '800px', height: '800px',
-        background: 'radial-gradient(circle, rgba(108, 92, 231, 0.12) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(230, 57, 70, 0.12) 0%, transparent 70%)',
         top: '-300px', right: '-300px', pointerEvents: 'none',
       }} />
       <div style={{
         position: 'absolute', width: '600px', height: '600px',
-        background: 'radial-gradient(circle, rgba(0, 210, 211, 0.08) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(230, 57, 70, 0.06) 0%, transparent 70%)',
         bottom: '-200px', left: '-200px', pointerEvents: 'none',
       }} />
 
