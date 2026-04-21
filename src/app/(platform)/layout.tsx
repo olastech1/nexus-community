@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -48,7 +48,13 @@ export default function PlatformLayout({
 }) {
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -121,7 +127,7 @@ export default function PlatformLayout({
           ))}
 
           {/* Creator Nav */}
-          {user?.role === 'creator' && (
+          {(user?.role === 'creator' || user?.role === 'admin') && (
             <>
               <div className="sidebar-section-label" style={{ marginTop: 'var(--space-4)' }}>
                 Creator Studio
@@ -178,7 +184,7 @@ export default function PlatformLayout({
                   {user.role}
                 </div>
               </div>
-              <button onClick={signOut} className="btn btn-icon btn-ghost" title="Sign out" style={{ fontSize: '16px' }}>
+              <button onClick={handleSignOut} className="btn btn-icon btn-ghost" title="Sign out" style={{ fontSize: '16px' }}>
                 🚪
               </button>
             </div>
@@ -212,7 +218,7 @@ export default function PlatformLayout({
           <div className="topbar-actions">
             <NotificationBell />
             {user && (
-              <Link href={user.handle ? `/profile/${user.handle}` : `/profile/${user.id}`}>
+              <Link href="/profile">
                 <div className="avatar avatar-sm" style={{ cursor: 'pointer' }}>
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt={user.displayName} />
